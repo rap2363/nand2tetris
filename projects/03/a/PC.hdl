@@ -16,5 +16,7 @@ CHIP PC {
     OUT out[16];
 
     PARTS:
-    // Put your code here:
+    Inc16 (in=prevOut, out=incPrevOut);
+    Mux8Way16 (sel[0]=load, sel[1]=inc, sel[2]=reset, a=prevOut, b=in, c=incPrevOut, d=in, out=inLoad); // Other muxed values default to 0 (if reset flag is set)
+    Register (in=inLoad, load=true, out=prevOut, out=out);
 }
