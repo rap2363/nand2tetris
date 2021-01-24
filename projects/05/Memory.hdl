@@ -27,5 +27,11 @@ CHIP Memory {
     OUT out[16];
 
     PARTS:
-    // Put your code here:
+    DMux (in=load, sel=address[14], a=loadUpper, b=loadIO); 				// Whether we write to upper memory or I/O
+    RAM16K (in=in, load=loadUpper, address=address[0..13], out=outUpper); 	// RAM16K (upper memory)
+    DMux4Way (in=loadIO, sel=address[13..14], c=loadScreen);				// Load the screen only if first bits are 10
+    Screen (in=in, load=loadScreen, address=address[0..12], out=outScreen); // Screen chip (8K rows)
+    Keyboard (out=outKeyboard); 											// Keyboard chip (just 1 register)
+    Mux16 (a=outScreen, b=outKeyboard, sel=address[13], out=outIO);         // If the address is 6000k, select the keyboard
+    Mux16 (a=outUpper, b=outIO, sel=address[14], out=out); 					// Write to output based on the address
 }
