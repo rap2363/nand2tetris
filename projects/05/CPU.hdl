@@ -39,5 +39,34 @@ CHIP CPU {
         pc[15];          // address of next instruction
 
     PARTS:
-    // Put your code here:
+    // Instruction Handling (A Register)
+    Mux16 (a=instruction, b=aluOut, sel=instruction[15], out=registerAIn); // Sometimes we write an instruction to A, and other times we write the ALU output.
+    Not (in=instruction[15], out=aInstruction);
+    Or (a=aInstruction, b=instruction[5], out=loadA);                               // Write to A when d1 true or if it's an A instruction.
+    ARegister (in=registerAIn, load=loadA, out=registerAOut, out[0..14]=addressM);  // A Register (writes out to addressM).
+
+    // D Register
+    And (a=instruction[4], b=instruction[15], out=loadDRegister);
+    DRegister (in=aluOut, load=loadDRegister, out=registerDOut);                // Gets written to based on d2 bit and whether it's an A instruction?
+    Mux16 (a=registerAOut, b=inM, sel=instruction[12], out=aluY);               // Compute based on A's data or what we read from memory.
+
+    // ALU: Computes based on the c_i bits of the instruction.
+    ALU(x=registerDOut, y=aluY, zx=instruction[11], nx=instruction[10], zy=instruction[9], ny=instruction[8], f=instruction[7], no=instruction[6], out=aluOut, out=outM, zr=zr, ng=ng);
+    
+    // Program Counter
+    // We jump only if our condition is met (based on opcode)
+    Not (in=ng, out=notng);
+    Not (in=zr, out=notzr);
+    And (a=notng, b=notzr, out=pos);
+    And (a=instruction[2], b=ng, out=j1);   // j1: Jump if the out < 0 (ng is true)
+    And (a=instruction[1], b=zr, out=j2);   // j2: Jump if the out == 0 (zr is true)
+    And (a=instruction[0], b=pos, out=j3);  // j3: Jump if the out < 0 (ng is false)
+
+    Or8Way (in[2]= j1, in[1] = j2, in[0]=j3, out=jump);
+    And (a=instruction[15], b=jump, out=useJump);                               // Only use the jump if it's a C-instruction
+    DMux (in=true, sel=useJump, a=incPC, b=loadPC);                             // sel is only set to true if last condition evaluates to a jump
+    PC (in=registerAOut, load=loadPC, inc=incPC, reset=reset, out[0..14]=pc);   // Load from the A register if we have a jump instruction (we jump to A), otherwise increment
+
+    // Write to M
+    And (a=instruction[3], b=instruction[15], out=writeM); // Write to m if it's a C-instruction and the d3 bit is true
 }

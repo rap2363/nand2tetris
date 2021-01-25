@@ -19,5 +19,8 @@ CHIP Computer {
     IN reset;
 
     PARTS:
-    // Put your code here:
+    // Read-only memory (programs), a CPU, and RAM (Harvard Architecture)
+    ROM32K (address=pc, out=programInstruction);
+    CPU (inM=memoryOut, instruction=programInstruction, reset=reset, outM=cpuOutM, writeM=writeM, addressM=addressM, pc=pc);
+    Memory (in=cpuOutM, load=writeM, address=addressM, out=memoryOut);
 }
